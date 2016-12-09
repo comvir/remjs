@@ -7,8 +7,9 @@
             this.options[field] = opt[field];
         }
     },
-    require: function (moduleId,callback) {
+    require: function (moduleId) {
         if (!remjs.modules[moduleId]) {
+            remjs.modulecount++;
             var xmlHttpRequest = remjs.creatHttpRequest();
             var url = remjs.options.base + moduleId + ".js";
             xmlHttpRequest.open("get", url, true);
@@ -20,12 +21,21 @@
                         eval(scriptcode);
                         return module.exports;
                     }
-                    if (remjs.checkrequire(xmlHttpRequest.responseText, callback)) {
-                        if (callback) {
-                            callback();
+                    remjs.moduleready++;
+                    var matchs = xmlHttpRequest.responseText.match(/require\(['"]\w+['"]\)/g);
+                    if (matchs && matchs.length) {
+                        for (var i = 0, length = matchs.length; i < length; i++) {
+                            var item = matchs[i];
+                            var moduleid = item.substring((item.indexOf('\'') !== -1 ? item.indexOf('\'') : item.indexOf('\"')) + 1, (item.lastIndexOf('\'') !== -1 ? item.lastIndexOf('\'') : item.lastIndexOf('\"')));
+                            if (!remjs.modules[moduleid]) {
+                                remjs.require(moduleid);
+                            }
                         }
                     }
-                    
+                    if (remjs.modulecount===remjs.moduleready) {
+                        remjs.startmain();
+                    }
+
                 }
             }
             xmlHttpRequest.send();
@@ -36,14 +46,17 @@
     },
     modules: {},
     scriptcode: {},
+    modulecount: 0,
+    moduleready:0,
     use: function (url) {
         if (!this.options.base) {
             this.options.base = url.substr(0, (url.lastIndexOf('/') || url.lastIndexOf('\\')) + 1);
         }
         var moduleId = url.substr((url.lastIndexOf('/') || url.lastIndexOf('\\')) + 1);
-        this.require(moduleId, function () {
+        this.require(moduleId);
+        this.startmain = function () {
             remjs.modules[moduleId](moduleId, remjs.require, { exports: null });
-        });
+        }
     },
     creatHttpRequest: function () {
         xmlhttp = null;
@@ -55,19 +68,5 @@
         }
         return xmlhttp;
     },
-    checkrequire: function (scriptcode,callback) {
-        var result = true;
-         var matchs = scriptcode.match(/require\(['"]\w+['"]\)/g);
-        if (matchs && matchs.length) {
-            for (var i = 0, length = matchs.length; i < length; i++) {
-                var item = matchs[i];
-                var moduleid = item.substring((item.indexOf('\'') !== -1 ? item.indexOf('\'') : item.indexOf('\"')) + 1, (item.lastIndexOf('\'') !== -1 ? item.lastIndexOf('\'') : item.lastIndexOf('\"')));
-                if (!remjs.modules[moduleid]) {
-                    result = false;
-                    remjs.require(moduleid, callback);
-                }
-            }
-        }
-        return result;
-    }
+    startmain:null
 }
