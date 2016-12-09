@@ -2,9 +2,7 @@
 在这个框架下，创建新的模块脚本不需要再将代码写在define中。
 
 例如：
-
 remjs的模块创建方式
-
 //require other module
 var mod=require('moduleid');
 //interface
