@@ -3,10 +3,15 @@
 
 例如：
 remjs的模块创建方式
+
 //require other module
+
 var mod=require('moduleid');
+
 //interface
+
 module.exports={}
 
 主模块入口
+
 remjs.use('/scripts/modules/main');
